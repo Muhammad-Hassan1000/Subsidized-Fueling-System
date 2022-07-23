@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.Drawing.Imaging;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -26,13 +28,13 @@ namespace Subsidized_Fueling_System
 
         private void Display_info_Load(object sender, EventArgs e)
         {
-            vdo_img = null ;
+            vdo_img = null;
             filter = new FilterInfoCollection(FilterCategory.VideoInputDevice);
             foreach (FilterInfo device in filter)
                 video_list_combobox.Items.Add(device.Name);
             video_list_combobox.SelectedIndex = 0;
             device = new VideoCaptureDevice();
-            
+
         }
 
         //Thread thread;
@@ -40,13 +42,13 @@ namespace Subsidized_Fueling_System
         private void start_video_Click(object sender, EventArgs e)
         {
             //thread = new Thread(video_ML);
-            
+
 
             device = new VideoCaptureDevice(filter[video_list_combobox.SelectedIndex].MonikerString);
             device.NewFrame += new_frame;
             device.Start();
         }
-        
+
         //static readonly CascadeClassifier cascadeClassifier = new CascadeClassifier("haarcascade_frontalface_alt_tree.xml");
 
         private void new_frame(object sender, NewFrameEventArgs eventArgs)
@@ -56,7 +58,7 @@ namespace Subsidized_Fueling_System
             pictureBox1.Image = vdo_img;
 
             video_ML();
-            
+
         }
 
         private void video_ML()         //ml script
@@ -72,9 +74,30 @@ namespace Subsidized_Fueling_System
             if (device.IsRunning)
                 device.Stop();
         }
+        private void save()
+        {
+            try
+            {
+                if (!Directory.Exists(@"C:\Users\Shumail\Desktop\SFS images"))
+                {
+                    Directory.CreateDirectory(@"C:\Users\Shumail\Desktop\SFS images");
+                    MessageBox.Show("Images Folder Created ...");
+                }
+                else
+                {
+                    string path = @"C:\Users\Shumail\Desktop\SFS images";
+                    pictureBox1.Image.Save(path + @"\car image test"  + ".jpg", ImageFormat.Jpeg);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+        }
 
         private void thread_btn_Click(object sender, EventArgs e)
         {
+            save();
             //Form ml = new Form();
             //ml.Show();
             

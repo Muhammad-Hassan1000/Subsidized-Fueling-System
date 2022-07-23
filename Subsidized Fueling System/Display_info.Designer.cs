@@ -126,7 +126,7 @@
             this.thread_btn.Name = "thread_btn";
             this.thread_btn.Size = new System.Drawing.Size(141, 23);
             this.thread_btn.TabIndex = 9;
-            this.thread_btn.Text = "thread";
+            this.thread_btn.Text = "save frame";
             this.thread_btn.UseVisualStyleBackColor = true;
             this.thread_btn.Click += new System.EventHandler(this.thread_btn_Click);
             // 
