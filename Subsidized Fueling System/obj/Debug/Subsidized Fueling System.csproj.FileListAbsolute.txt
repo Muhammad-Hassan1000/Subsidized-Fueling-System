@@ -232,3 +232,5 @@ C:\Users\Shumail\Desktop\Subsidized Fueling System\Subsidized Fueling System\bin
 C:\Users\Shumail\Desktop\Subsidized Fueling System\Subsidized Fueling System\bin\Debug\AForge.Video.DirectShow.xml
 C:\Users\Shumail\Desktop\Subsidized Fueling System\Subsidized Fueling System\bin\Debug\Emgu.CV.Platform.NetStandard.xml
 C:\Users\Shumail\Desktop\Subsidized Fueling System\Subsidized Fueling System\obj\Debug\Subsidized Fueling System.csproj.CopyComplete
+C:\Users\Shumail\Desktop\Subsidized Fueling System\Subsidized Fueling System\bin\Debug\haar_cascade_cars.xml
+C:\Users\Shumail\Desktop\Subsidized Fueling System\Subsidized Fueling System\bin\Debug\haarcascade_car.xml
