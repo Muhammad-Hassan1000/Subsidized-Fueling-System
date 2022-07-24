@@ -14,6 +14,8 @@ using AForge.Video;
 using AForge.Video.DirectShow;
 using Emgu.CV;
 using Emgu.CV.Structure;
+using IronPython.Hosting;
+using Microsoft.Scripting.Hosting;
 
 namespace Subsidized_Fueling_System
 {
@@ -21,6 +23,14 @@ namespace Subsidized_Fueling_System
     {
         bool ml_bool;
         public static Bitmap vdo_img;
+        IDictionary<string, int> price_dict = new Dictionary<string, int>() {
+            {"1",160 },
+            {"2",200 },
+            {"3",250 },
+            {"",300 }
+
+        };
+
         public Display_info()
         {
             InitializeComponent();
@@ -43,6 +53,7 @@ namespace Subsidized_Fueling_System
         
         private void start_video_Click(object sender, EventArgs e)
         {
+            start_video.Enabled = false;
             device = new VideoCaptureDevice(filter[video_list_combobox.SelectedIndex].MonikerString);
             device.NewFrame += new_frame;
             device.Start();
@@ -54,82 +65,88 @@ namespace Subsidized_Fueling_System
         {
             vdo_img = (Bitmap)eventArgs.Frame.Clone();
             pictureBox1.Image = vdo_img;
-            if (ml_bool)
-            {
-                ml_bool = false;
-                ml_thread();
-                //ml_bool = true;
-            }
-            Console.WriteLine("ml2---");
-
-            //Bitmap bitmap = (Bitmap)eventArgs.Frame.Clone();
-            //Image<Bgr, byte> grayImage = new Image<Bgr, byte>(bitmap);
-            /*Rectangle[] rectangles = cascadeClassifier.DetectMultiScale((IInputArray)eventArgs.Frame.Clone(), 1.2, 1);
-            foreach (Rectangle rectangle in rectangles)
-            {
-                using (Graphics graphics = Graphics.FromImage(bitmap))
+               /*if (ml_bool)
                 {
-                    using (Pen pen = new Pen(Color.Red, 1))
-                    {
-                        graphics.DrawRectangle(pen, rectangle);
-                    }
+                    ml_bool = false;
+                    ml_thread();
+                    //ml_bool = true;
                 }
+                //Console.WriteLine("ml2---");
+            
             }
-            pictureBox1.Image = bitmap;*/
 
+            private void ml_thread()
+            {
+                Task t1 = new Task(video_ML);
+                t1.Start();
+            }
+            private void video_ML()         //ml script
+            {
+                //if (pictureBox2.IsAccessible)
+                //pictureBox2.Image = vdo_img;
+                Thread.Sleep(2000);
+                //Console.WriteLine("ml..........");
+
+
+                ml_bool = true;*/
         }
-
-        private void ml_thread()
-        {
-            Task t1 = new Task(video_ML);
-            t1.Start();
-        }
-        private void video_ML()         //ml script
-        {
-            //if (pictureBox2.IsAccessible)
-            //pictureBox2.Image = vdo_img;
-            Thread.Sleep(2000);
-            Console.WriteLine("ml..........");
-
-
-
-            ml_bool = true;
-        }
+        
+       
 
         private void Display_info_FormClosing(object sender, FormClosingEventArgs e)
         {
             if (device.IsRunning)
                 device.Stop();
         }
+
         private void save()
         {
             try
-            {
+            { 
                 string datetime = DateTime.Now.ToString("dd/MM/yyyy-HH/mm/ss");
+                string filename = @"\car image test" + datetime + ".jpg";
                 if (!Directory.Exists(@"C:\Users\Shumail\Desktop\SFS images"))
                 {
                     Directory.CreateDirectory(@"C:\Users\Shumail\Desktop\SFS images");
-                    string path = @"C:\Users\Shumail\Desktop\SFS images";
-                    pictureBox1.Image.Save(path + @"\car image test" +datetime+ ".jpg", ImageFormat.Jpeg);
-                    //MessageBox.Show("Images saved");
                 }
-                else
-                {
-                    string path = @"C:\Users\Shumail\Desktop\SFS images";
-                    pictureBox1.Image.Save(path + @"\car image test"  +datetime+ ".jpg", ImageFormat.Jpeg);
-                    //MessageBox.Show("Images saved");
-                }
+
+                string path = @"C:\Users\Shumail\Desktop\SFS images";
+                vdo_img.Save(path + filename, ImageFormat.Jpeg);
+                //MessageBox.Show("Images saved");
+
+                python_run(filename);
+
             }
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message);
             }
         }
+        
 
-        private void thread_btn_Click(object sender, EventArgs e)
+        void python_run(string filename)
         {
-            new Task(save).Start();
-            //save();
+            var engine = Python.CreateEngine();
+            var script = @"C:\Users\Shumail\Desktop\Sameed\python_test.py";
+            var source = engine.CreateScriptSourceFromFile(script);
+            
+            var elO = engine.Runtime.IO;
+            var errors = new MemoryStream();
+            elO.SetErrorOutput(errors, Encoding.Default);
+            var results = new MemoryStream();
+            elO.SetOutput(results, Encoding.Default);
+            
+            var scope = engine.CreateScope();
+            scope.SetVariable("my_string", filename);
+            source.Execute(scope);
+            
+            string str(byte[] x) => Encoding.Default.GetString(x);
+
+            Console.WriteLine("errors");
+            Console.WriteLine(str(errors.ToArray()));
+            Console.WriteLine();
+            Console.WriteLine("results");
+            SetcategoryTextBox(str(results.ToArray()));
         }
 
         private void log_btn_Click(object sender, EventArgs e)
@@ -137,6 +154,36 @@ namespace Subsidized_Fueling_System
             Form history_form = new Form();
             history_form.Show();
             
+        }
+
+        private void category_textbox_TextChanged(object sender, EventArgs e)
+        {
+            SetpriceTextBox(category_textbox.Text.Trim('\n', '\r'));
+        }
+
+        private void SetpriceTextBox(String text)
+        {
+            if (InvokeRequired)
+            {
+                this.Invoke((MethodInvoker)delegate () { SetpriceTextBox(text.Trim('\n', '\r')); });
+                return;
+            }
+            
+            price_textbox.Text = price_dict[text].ToString();
+        }
+        private void SetcategoryTextBox(String text)
+        {
+            if (InvokeRequired)
+            {
+                this.Invoke((MethodInvoker)delegate () { SetcategoryTextBox(text); });
+                return;
+            }
+            category_textbox.Text += Environment.NewLine + text;
+        }
+
+        private void save_btn_Click(object sender, EventArgs e)
+        {
+            new Task(save).Start();
         }
     }
 }
