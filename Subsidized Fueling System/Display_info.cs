@@ -6,6 +6,7 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -21,14 +22,13 @@ namespace Subsidized_Fueling_System
 {
     public partial class Display_info : Form
     {
-        bool ml_bool;
+        string img_save_dir_path = @"C:\Users\Shumail\Desktop\SFS images";
         public static Bitmap vdo_img;
         IDictionary<string, int> price_dict = new Dictionary<string, int>() {
-            {"1",160 },
-            {"2",200 },
-            {"3",250 },
+            {"2",160 },//small
+            {"1",200 },//medium
+            {"0",250 },//large
             {"",300 }
-
         };
 
         public Display_info()
@@ -41,7 +41,6 @@ namespace Subsidized_Fueling_System
 
         private void Display_info_Load(object sender, EventArgs e)
         {
-            ml_bool = true;
             vdo_img = null;
             filter = new FilterInfoCollection(FilterCategory.VideoInputDevice);
             foreach (FilterInfo device in filter)
@@ -50,54 +49,26 @@ namespace Subsidized_Fueling_System
             device = new VideoCaptureDevice();
 
         }
-        
-        private void start_video_Click(object sender, EventArgs e)
+
+        private void start_btn_Click(object sender, EventArgs e)
         {
-            start_video.Enabled = false;
             device = new VideoCaptureDevice(filter[video_list_combobox.SelectedIndex].MonikerString);
             device.NewFrame += new_frame;
             device.Start();
         }
 
-        //static readonly CascadeClassifier cascadeClassifier = new CascadeClassifier("haarcascade_car.xml");
-
         private void new_frame(object sender, NewFrameEventArgs eventArgs)
         {
             vdo_img = (Bitmap)eventArgs.Frame.Clone();
             pictureBox1.Image = vdo_img;
-               /*if (ml_bool)
-                {
-                    ml_bool = false;
-                    ml_thread();
-                    //ml_bool = true;
-                }
-                //Console.WriteLine("ml2---");
-            
-            }
-
-            private void ml_thread()
-            {
-                Task t1 = new Task(video_ML);
-                t1.Start();
-            }
-            private void video_ML()         //ml script
-            {
-                //if (pictureBox2.IsAccessible)
-                //pictureBox2.Image = vdo_img;
-                Thread.Sleep(2000);
-                //Console.WriteLine("ml..........");
-
-
-                ml_bool = true;*/
-        }
-        
-       
-
+        }       
+    
         private void Display_info_FormClosing(object sender, FormClosingEventArgs e)
         {
             if (device.IsRunning)
                 device.Stop();
         }
+        
 
         private void save()
         {
@@ -105,16 +76,23 @@ namespace Subsidized_Fueling_System
             { 
                 string datetime = DateTime.Now.ToString("dd/MM/yyyy-HH/mm/ss");
                 string filename = @"\car image test" + datetime + ".jpg";
-                if (!Directory.Exists(@"C:\Users\Shumail\Desktop\SFS images"))
+                
+
+                if (!Directory.Exists(img_save_dir_path))
                 {
-                    Directory.CreateDirectory(@"C:\Users\Shumail\Desktop\SFS images");
+                    Directory.CreateDirectory(img_save_dir_path);
                 }
-
-                string path = @"C:\Users\Shumail\Desktop\SFS images";
-                vdo_img.Save(path + filename, ImageFormat.Jpeg);
+                vdo_img.Save(img_save_dir_path + filename, ImageFormat.Jpeg);
                 //MessageBox.Show("Images saved");
+                
+                
+                
+                
+                //webcall(vdo_img);
+                //python_run(filename);
 
-                python_run(filename);
+
+
 
             }
             catch (Exception ex)
@@ -122,12 +100,12 @@ namespace Subsidized_Fueling_System
                 MessageBox.Show(ex.Message);
             }
         }
-        
 
+        string python_script_path = @"C:\Users\Shumail\Desktop\Sameed\python_test.py";
         void python_run(string filename)
         {
             var engine = Python.CreateEngine();
-            var script = @"C:\Users\Shumail\Desktop\Sameed\python_test.py";
+            var script = python_script_path;
             var source = engine.CreateScriptSourceFromFile(script);
             
             var elO = engine.Runtime.IO;
@@ -146,6 +124,7 @@ namespace Subsidized_Fueling_System
             Console.WriteLine(str(errors.ToArray()));
             Console.WriteLine();
             Console.WriteLine("results");
+            Console.WriteLine(str(results.ToArray()));
             SetcategoryTextBox(str(results.ToArray()));
         }
 
@@ -183,8 +162,53 @@ namespace Subsidized_Fueling_System
 
         private void save_btn_Click(object sender, EventArgs e)
         {
-            new Task(save).Start();
+            save();
         }
+
+
+
+        void webcall2(Bitmap img)
+        {
+            byte[] dataStream = Encoding.UTF8.GetBytes(ImageToByte(img));   //img
+            HttpWebRequest request = (HttpWebRequest)WebRequest.Create("http://localhost:60395/Service1.asmx/HelloWorldNew");
+            request.Method = "POST";
+            request.ContentType = "application/x-www-form-urlencoded";
+            request.ContentLength = dataStream.Length;
+            Stream newStream = request.GetRequestStream();
+            newStream.Write(dataStream, 0, dataStream.Length);
+            newStream.Close();
+            var reader = new StreamReader(request.GetResponse().GetResponseStream());
+            string dataReturn = reader.ReadToEnd();
+        }
+        // check returned convert
+        void webcall(Bitmap img)
+        {
+            HttpWebRequest myReq = (HttpWebRequest)WebRequest.Create("https://WEB_URL");
+            myReq.Method = "POST";
+            myReq.ContentType = "text/xml";
+            myReq.Timeout = 10000;
+            myReq.Headers.Add("SOAPAction", ":\"#save\"");
+
+            byte[] PostData = Encoding.UTF8.GetBytes(ImageToByte(img)); //img
+            myReq.ContentLength = PostData.Length;
+
+            using (Stream requestStream = myReq.GetRequestStream())
+            {
+                requestStream.Write(PostData, 0, PostData.Length);
+            }
+
+            HttpWebResponse response = (HttpWebResponse)myReq.GetResponse();
+        }
+
+
+
+        public static char[] ImageToByte(Bitmap img)
+        {
+            ImageConverter converter = new ImageConverter();
+            return (char[])converter.ConvertTo(img, typeof(char[]));
+        }
+
+        
     }
 }
  
